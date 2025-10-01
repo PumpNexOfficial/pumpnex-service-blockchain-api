@@ -1,0 +1,25 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8081:8081"
+    environment:
+      - APP_REDIS_URL=redis://redis:6379
+      - APP_DATABASE_URL=postgres://user:pass@db:5432/dbname
+    depends_on:
+      - redis
+      - db
+    volumes:
+      - ./config:/app/config:ro
+  redis:
+    image: redis:7
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=dbname
+    volumes:
+      - db-data:/var/lib/postgresql/data
+volumes:
+  db-data:

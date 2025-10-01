@@ -1,0 +1,10 @@
+[package]
+name = "verify_sha256_test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ed25519-dalek = "1.0"
+bs58 = "0.5"
+sha2 = "0.10"
+rand = "0.8"

@@ -1,0 +1,23 @@
+[server]
+host = "0.0.0.0"
+port = 8081
+tls_cert_path = "cert.pem"
+tls_key_path = "key.pem"
+log_level = "info"
+
+[redis]
+url = "redis://localhost:6379"
+
+[cache]
+nonce_ttl_secs = 300
+
+[database]
+max_connections = 10
+acquire_timeout_secs = 30
+idle_timeout_secs = 600
+run_migrations = false
+url = "postgres://user:pass@localhost:5432/dbname"
+
+[pagination]
+default_limit = 10
+max_limit = 100

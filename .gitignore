@@ -1,0 +1,15 @@
+# Rust
+target/
+Cargo.lock
+
+# Config
+.env
+config/local.toml
+
+# TLS
+cert.pem
+key.pem
+
+# Logs and temp
+*.log
+.DS_Store
