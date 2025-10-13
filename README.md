@@ -1,4 +1,4 @@
-# PumpNex Blockchain API (v0.24.0)
+# PumpNex Blockchain API (v0.25.0)
 
 High-performance Rust API for Solana blockchain data, with real-time notifications, WebSocket support, and secure wallet authentication.
 
