@@ -20,3 +20,4 @@ High-performance Rust API for Solana blockchain data, with real-time notificatio
 - Iteration 2: Authentication refactor (in progress).
 
 License: MIT. Contributions welcome!
+🔥 v0.25.0 — обновлено Mon Oct 13 03:19:56 PM CEST 2025
