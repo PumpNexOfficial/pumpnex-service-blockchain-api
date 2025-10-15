@@ -1,0 +1,6 @@
+# Config & Environments
+
+Конфиг: TOML + ENV override. Режимы: dev/stage/prod.
+dev: HTTP-only (TLS off). prod: TLS on (rustls).
+ENV-префиксы: APP__SERVER__*, APP__SECURITY__*, DATABASE_URL, REDIS_URL, KAFKA_*.
+При старте логируй: service_name, service_version, port, режим, включены ли TLS/OTEL/Sentry.

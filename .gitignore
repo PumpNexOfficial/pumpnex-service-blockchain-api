@@ -1,15 +1,24 @@
 # Rust
-target/
+/target/
+**/*.rs.bk
+*.pdb
 Cargo.lock
 
-# Config
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment
 .env
-config/local.toml
+.env.local
 
-# TLS
-cert.pem
-key.pem
-
-# Logs and temp
-*.log
+# OS
 .DS_Store
+Thumbs.db
+
+# Logs
+*.log
+

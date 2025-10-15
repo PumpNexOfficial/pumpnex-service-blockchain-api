@@ -1,0 +1,11 @@
+# Data: Postgres / Redis / Kafka
+
+Postgres (sqlx):
+- миграции обязательны; индексы под реальные запросы (signature/slot/jsonb GIN и т.п.).
+
+Redis:
+- только через единый слой AdaptiveCache (get/set JSON, rate_limit_{ip|user}, ws_{load,save}_subscriptions).
+- никаких прямых вызовов команд клиента мимо слоя.
+
+Kafka:
+- подключать по задаче; явные топики/ключи/ретраи/идемпотентность.

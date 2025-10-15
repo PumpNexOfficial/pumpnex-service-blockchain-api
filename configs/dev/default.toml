@@ -1,0 +1,202 @@
+[service]
+name = "blockchain-api"
+version = "0.2.0"
+
+[server]
+host = "0.0.0.0"
+port = 8080
+tls_enabled = false
+request_body_limit_bytes = 1048576  # 1 MiB
+workers = 0                        # 0 = auto (num_cpus)
+cors_allow_origins = ["*"]
+cors_allow_headers = ["*"]
+cors_allow_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+
+[telemetry]
+log_format = "json"
+log_level = "info"
+request_id_header = "x-request-id"
+
+[auth]
+enabled = false  # disabled for testing without Redis
+header_wallet_address = "X-Wallet-Address"
+header_wallet_signature = "X-Wallet-Signature"
+header_wallet_nonce = "X-Nonce"
+nonce_ttl_secs = 120
+redis_key_prefix = "auth:nonce"
+bypass_paths = ["/healthz", "/readyz", "/version", "/api/auth/nonce", "/api/transactions"]
+protect_prefixes = ["/api"]
+require_https = false
+accept_signature_b58 = true
+accept_signature_b64 = false
+canonicalize_method = "upper"
+canonicalize_path = "as-is"
+
+[cache]
+enabled = true
+backend = "memory"  # "memory" or "redis"
+ttl_secs = 10
+max_entries = 1000
+etag_salt = ""
+
+[rate_limit]
+enabled = true
+strategy = "fixed"
+respect_x_forwarded_for = true
+ip_max_requests = 10      # Low for easy testing
+ip_window_secs = 60
+user_max_requests = 20    # Higher for wallet users
+user_window_secs = 60
+
+[integrations]
+enable_postgres = true   # enabled for TT-06
+enable_redis = true      # enabled for WalletAuth
+enable_kafka = false     # disabled by default in dev without Kafka
+
+# Postgres
+database_url = "postgres://postgres:postgres@127.0.0.1:5432/postgres"
+pg_max_connections = 10
+pg_connect_timeout_ms = 3000
+pg_idle_timeout_ms = 300000
+
+# Redis
+redis_url = "redis://127.0.0.1:6379"
+redis_connect_timeout_ms = 1000
+redis_command_timeout_ms = 1000
+
+# Kafka
+kafka_brokers = ""
+kafka_client_id = "blockchain-api"
+kafka_metadata_timeout_ms = 1500
+
+[ws]
+enabled = true
+path = "/ws/tx"
+ping_interval_secs = 20
+idle_timeout_secs = 60
+max_subscriptions_per_conn = 10
+max_client_msg_per_min = 30
+max_events_per_sec = 100
+source = "poll"  # "poll" | "redis"
+poll_interval_ms = 500
+redis_channel = "tx:new"
+
+[kafka]
+enabled = true
+brokers = "127.0.0.1:9092"
+group_id = "blockchain-api-consumer"
+input_topic = "tx.raw"
+dlq_topic = "tx.dlq"
+enable_auto_commit = false
+max_poll_records = 100
+poll_interval_ms = 200
+session_timeout_ms = 10000
+message_max_bytes = 1048576
+retry_backoff_ms = 200
+max_retries = 5
+
+[ingest]
+max_inflight_batches = 4
+db_insert_batch_size = 100
+emit_ws_events = true
+idempotency_by_signature = true
+
+[waf]
+enabled = true
+mode = "block"
+respect_x_forwarded_for = true
+bypass_paths = ["/healthz", "/readyz", "/version", "/swagger-ui/", "/api-docs/openapi.json"]
+max_request_body_bytes = 1048576
+max_query_length = 4096
+allowed_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+use_redis_lists = true
+redis_ban_set = "waf:ban:ips"
+redis_grey_set = "waf:grey:ips"
+ban_ttl_secs = 3600
+grey_ttl_secs = 300
+blocked_ua_substrings = ["sqlmap", "acunetix", "nmap", "dirbuster"]
+blocked_path_patterns = ["(?i)\\.(?:env|git|svn)(?:$|/)", "(?i)\\bwp-admin\\b", "(?i)\\bphpmyadmin\\b"]
+sqli_patterns = ["(?i)\\bUNION\\b\\s+\\bSELECT\\b", "(?i)\\bOR\\b\\s+1=1\\b", "(?i)\\bSLEEP\\s*\\("]
+xss_patterns = ["(?i)<\\s*script\\b", "(?i)onerror\\s*=", "(?i)javascript:"]
+rce_patterns = ["(?i)\\b(?:/bin/sh|/bin/bash)\\b", "(?i)\\b\\|\\s*\\b(?:cat|ls|curl|wget)\\b"]
+path_traversal_patterns = ["\\.\\./", "%2e%2e/"]
+score_weights = { "sqli" = 8, "xss" = 6, "rce" = 8, "traversal" = 6, "bad_ua" = 4, "bad_path" = 4, "oversize" = 5 }
+block_threshold = 10
+grey_threshold = 6
+max_events_per_ip_per_min = 60
+
+[admin]
+enable_debug_route = true
+debug_route_path = "/_waf/debug"
+admin_header = "X-Admin-Token"
+admin_token = ""
+
+[otel]
+enabled = true
+service_name = "blockchain-api"
+service_namespace = "pumpnex"
+service_version = "0.2.0"
+resource_attributes = "deployment.environment=dev"
+
+[otel.traces]
+exporter = "otlp"
+otlp_endpoint = "http://127.0.0.1:4317"
+protocol = "grpc"
+sample_ratio = 0.1
+include_internal = true
+
+[otel.metrics]
+exporter = "prometheus"
+prometheus_bind = "0.0.0.0:9464"
+otlp_endpoint = "http://127.0.0.1:4317"
+
+[otel.logs]
+inject_trace_ids = true
+
+[sentry]
+enabled = false
+dsn = ""
+environment = "dev"
+release = "blockchain-api@0.2.0"
+traces_sample_rate = 0.0
+
+[metrics]
+http_request_labels = ["method", "path", "status"]
+ws_labels = ["event", "ok"]
+cache_labels = ["backend", "op", "hit"]
+
+[security]
+cors_allowed_origins = ["*"]
+cors_allowed_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+cors_allowed_headers = ["*"]
+hsts_enabled = false
+hsts_max_age_secs = 31536000
+frame_options = "DENY"
+referrer_policy = "no-referrer"
+x_content_type_options = "nosniff"
+permissions_policy = "geolocation=(), microphone=(), camera=()"
+csp_enabled = false
+csp = "default-src 'none'; frame-ancestors 'none';"
+
+[tls]
+enabled = false
+cert_path = "/etc/blockchain-api/tls/cert.pem"
+key_path = "/etc/blockchain-api/tls/key.pem"
+
+[db]
+run_migrations_on_start = false
+
+[deploy]
+service_http_port = 8080
+metrics_port = 9464
+graceful_shutdown_secs = 10
+
+[image]
+name = "ghcr.io/OWNER/blockchain-api"
+
+[runtime]
+worker_threads = 0                 # 0 = auto
+max_blocking_threads = 512
+
+[load]                              # only for examples/scripts (not required)
+default_base_url = "http://127.0.0.1:8080"

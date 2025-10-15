@@ -1,0 +1,60 @@
+[package]
+name = "blockchain-api"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# Workspace dependencies
+actix-web.workspace = true
+actix-rt.workspace = true
+actix-cors.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+config.workspace = true
+dotenvy.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+sqlx.workspace = true
+redis.workspace = true
+rdkafka.workspace = true
+
+# Internal crates
+blockchain-auth = { path = "../crates/auth" }
+
+# Additional dependencies
+futures-util = "0.3"
+sha1 = "0.10"
+utoipa = { version = "4.2", features = ["actix_extras"] }
+utoipa-swagger-ui = { version = "6.0", features = ["actix-web"] }
+regex = "1.12"
+md5 = "0.7"
+
+# OpenTelemetry
+opentelemetry = "0.25"
+opentelemetry_sdk = "0.25"
+opentelemetry-otlp = "0.31"
+opentelemetry-semantic-conventions = "0.15"
+tracing-opentelemetry = "0.25"
+prometheus = "0.13"
+sentry = "0.33"
+sentry-tracing = "0.33"
+
+# WebSocket
+actix-web-actors = "4.0"
+
+# TLS
+rustls = "0.22"
+rustls-pemfile = "2.0"
+tokio-rustls = "0.25"
+actix = "0.13"
+
+[[bin]]
+name = "blockchain-api"
+path = "src/main.rs"

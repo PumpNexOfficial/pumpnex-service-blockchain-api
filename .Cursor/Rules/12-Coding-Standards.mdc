@@ -1,0 +1,6 @@
+# Coding Standards (Rust/Actix)
+
+В хендлерах — никаких unwrap/expect. Только ? + нормализация в ApiError.
+Логи — через tracing: request_id, method, path, status, duration_ms.
+Middleware, читающий body, ОБЯЗАН вернуть body в пайплайн.
+Строгая валидация входа (query/body/path); явные ошибки с корректными HTTP-кодами.

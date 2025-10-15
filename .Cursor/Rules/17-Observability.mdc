@@ -1,0 +1,5 @@
+# Observability (Logs / Metrics / OTEL / Sentry)
+
+Логи: структурные через tracing.
+Метрики: /metrics (Prometheus) — latency, 4xx/5xx, cache_hit, rate_limit, waf_blocks, ws_active.
+OTEL/Sentry — включать по конфигу; в dev можно OFF. Ошибки/трейсы линкованы с request_id.

@@ -1,0 +1,9 @@
+# Architecture & Files — Guideline (not strict)
+
+Базовый вектор:
+- workspace: api/ (бинарь), crates/{auth,cache,solana,common} (библиотеки),
+- configs/{dev,stage,prod}, migrations/, infra/{docker,k8s}, .github/workflows/.
+Разрешено:
+- Перестраивать/добавлять модули и файлы, если так быстрее к результату.
+- Подсовывать свои скрипты (make/just/bash) для проверки и автозапуска.
+Требование одно: конечный этап должен РАБОТАТЬ.

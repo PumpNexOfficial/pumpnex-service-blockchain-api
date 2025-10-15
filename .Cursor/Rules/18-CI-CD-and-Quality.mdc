@@ -1,0 +1,5 @@
+# CI/CD & Quality
+
+Обязательно: cargo fmt --all, cargo clippy -D warnings, тесты, sqlx prepare.
+Docker: минимальный образ, healthchecks.
+Branch protection: main/release/* — через PR, ≥1 review, все CI зелёные.

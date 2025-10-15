@@ -1,0 +1,161 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    name: Build and Push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
+      
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha,prefix={{branch}}-
+          
+    - name: Build and push
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: infra/docker/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        
+    - name: Output image
+      id: image
+      run: echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}" >> $GITHUB_OUTPUT
+
+  deploy-stage:
+    name: Deploy to Stage
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    environment: staging
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+        
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+        
+    - name: Deploy to stage
+      run: |
+        export KUBECONFIG=kubeconfig
+        kubectl config set-context --current --namespace=${{ secrets.KUBE_NAMESPACE || 'default' }}
+        
+        # Update image in deployment
+        kubectl set image deployment/blockchain-api blockchain-api=${{ needs.build-and-push.outputs.image }}
+        
+        # Wait for rollout
+        kubectl rollout status deployment/blockchain-api --timeout=300s
+        
+        # Verify deployment
+        kubectl get pods -l app=blockchain-api
+        
+    - name: Run smoke tests
+      run: |
+        # Get service endpoint
+        kubectl get service blockchain-api
+        
+        # Test health endpoints (if accessible)
+        # kubectl port-forward service/blockchain-api 8080:8080 &
+        # sleep 10
+        # curl -f http://localhost:8080/healthz
+        # curl -f http://localhost:8080/readyz
+        # curl -f http://localhost:8080/version
+
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deploy-stage]
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: production
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+        
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+        
+    - name: Deploy to production
+      run: |
+        export KUBECONFIG=kubeconfig
+        kubectl config set-context --current --namespace=${{ secrets.KUBE_NAMESPACE || 'default' }}
+        
+        # Update image in deployment
+        kubectl set image deployment/blockchain-api blockchain-api=${{ needs.build-and-push.outputs.image }}
+        
+        # Wait for rollout
+        kubectl rollout status deployment/blockchain-api --timeout=300s
+        
+        # Verify deployment
+        kubectl get pods -l app=blockchain-api
+        
+    - name: Run smoke tests
+      run: |
+        # Get service endpoint
+        kubectl get service blockchain-api
+        
+        # Test health endpoints (if accessible)
+        # kubectl port-forward service/blockchain-api 8080:8080 &
+        # sleep 10
+        # curl -f http://localhost:8080/healthz
+        # curl -f http://localhost:8080/readyz
+        # curl -f http://localhost:8080/version

@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+      
+      kafka:
+        image: confluentinc/cp-kafka:7.6.1
+        env:
+          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+        options: >-
+          --health-cmd "kafka-topics --bootstrap-server localhost:9092 --list"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 9092:9092
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+        
+    - name: Cache cargo registry
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        
+    - name: Cache cargo index
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+        
+    - name: Cache cargo build
+      uses: actions/cache@v3
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+        
+    - name: Install sqlx-cli
+      run: cargo install sqlx-cli --no-default-features --features postgres
+      
+    - name: Prepare database
+      run: |
+        sqlx database create
+        sqlx migrate run
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+        
+    - name: Check formatting
+      run: cargo fmt --all -- --check
+      
+    - name: Run clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+      
+    - name: Run tests
+      run: cargo test --all --locked
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+        REDIS_URL: redis://localhost:6379
+        KAFKA_BROKERS: localhost:9092
+        APP__ENV: test
+        
+    - name: Run audit
+      run: cargo audit
+      continue-on-error: true
+      
+    - name: Build release
+      run: cargo build --release --locked
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: blockchain-api-binary
+        path: target/release/blockchain-api

@@ -1,0 +1,158 @@
+groups:
+  - name: blockchain-api-alerts
+    rules:
+      # High Error Rate Alert
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(http_requests_total{status=~"5.."}[5m]) / 
+            rate(http_requests_total[5m])
+          ) > 0.01
+        for: 2m
+        labels:
+          severity: page
+          service: blockchain-api
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} for {{ $labels.instance }}"
+          runbook_url: "https://docs.example.com/runbooks/high-error-rate"
+
+      # High Latency P95 Alert
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95, 
+            sum by (le) (rate(http_request_duration_seconds_bucket[5m]))
+          ) > 0.3
+        for: 3m
+        labels:
+          severity: warn
+          service: blockchain-api
+        annotations:
+          summary: "High P95 latency detected"
+          description: "P95 latency is {{ $value | humanizeDuration }} for {{ $labels.instance }}"
+          runbook_url: "https://docs.example.com/runbooks/high-latency"
+
+      # High Latency P99 Alert
+      - alert: HighLatencyP99
+        expr: |
+          histogram_quantile(0.99, 
+            sum by (le) (rate(http_request_duration_seconds_bucket[5m]))
+          ) > 0.5
+        for: 2m
+        labels:
+          severity: page
+          service: blockchain-api
+        annotations:
+          summary: "High P99 latency detected"
+          description: "P99 latency is {{ $value | humanizeDuration }} for {{ $labels.instance }}"
+          runbook_url: "https://docs.example.com/runbooks/high-latency"
+
+      # Circuit Breaker Open Alert
+      - alert: CircuitBreakerOpen
+        expr: |
+          increase(circuit_state_changes{state="OPEN"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warn
+          service: blockchain-api
+        annotations:
+          summary: "Circuit breaker opened"
+          description: "Circuit breaker for {{ $labels.target }} is OPEN"
+          runbook_url: "https://docs.example.com/runbooks/circuit-breaker"
+
+      # WebSocket Disconnect Spike Alert
+      - alert: WSDisconnectSpike
+        expr: |
+          rate(ws_events_total{event="disconnect"}[5m]) > 10
+        for: 2m
+        labels:
+          severity: warn
+          service: blockchain-api
+        annotations:
+          summary: "High WebSocket disconnect rate"
+          description: "WebSocket disconnect rate is {{ $value }} per second"
+          runbook_url: "https://docs.example.com/runbooks/websocket-issues"
+
+      # Kafka Consumer Lag Alert (if lag metrics are available)
+      - alert: KafkaConsumerLag
+        expr: |
+          kafka_consumer_lag_sum > 1000
+        for: 5m
+        labels:
+          severity: warn
+          service: blockchain-api
+        annotations:
+          summary: "High Kafka consumer lag"
+          description: "Kafka consumer lag is {{ $value }} messages"
+          runbook_url: "https://docs.example.com/runbooks/kafka-lag"
+
+      # Database Connection Pool Exhaustion
+      - alert: DatabasePoolExhaustion
+        expr: |
+          (
+            pg_stat_activity_count / 
+            pg_settings_max_connections
+          ) > 0.8
+        for: 3m
+        labels:
+          severity: warn
+          service: blockchain-api
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Database pool usage is {{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.example.com/runbooks/database-pool"
+
+      # Redis Connection Issues
+      - alert: RedisConnectionIssues
+        expr: |
+          rate(redis_operations_total{status="error"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warn
+          service: blockchain-api
+        annotations:
+          summary: "High Redis error rate"
+          description: "Redis error rate is {{ $value }} per second"
+          runbook_url: "https://docs.example.com/runbooks/redis-issues"
+
+      # Service Down Alert
+      - alert: ServiceDown
+        expr: |
+          up{job="blockchain-api"} == 0
+        for: 1m
+        labels:
+          severity: page
+          service: blockchain-api
+        annotations:
+          summary: "Blockchain API service is down"
+          description: "Service {{ $labels.instance }} is not responding"
+          runbook_url: "https://docs.example.com/runbooks/service-down"
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            process_resident_memory_bytes / 
+            machine_memory_bytes
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warn
+          service: blockchain-api
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.example.com/runbooks/memory-usage"
+
+      # High CPU Usage
+      - alert: HighCPUUsage
+        expr: |
+          rate(process_cpu_seconds_total[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warn
+          service: blockchain-api
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.example.com/runbooks/cpu-usage"

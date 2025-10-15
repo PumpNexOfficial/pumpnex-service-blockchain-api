@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blockchain-api
+  labels:
+    app: blockchain-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: blockchain-api
+  template:
+    metadata:
+      labels:
+        app: blockchain-api
+    spec:
+      containers:
+      - name: blockchain-api
+        image: ghcr.io/OWNER/blockchain-api:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9464
+          name: metrics
+        env:
+        - name: APP__ENV
+          value: "prod"
+        - name: APP__INTEGRATIONS__DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: blockchain-api-secrets
+              key: database-url
+        - name: APP__INTEGRATIONS__REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: blockchain-api-secrets
+              key: redis-url
+        - name: APP__INTEGRATIONS__KAFKA_BROKERS
+          valueFrom:
+            configMapKeyRef:
+              name: blockchain-api-config
+              key: kafka-brokers
+        - name: APP__DB__RUN_MIGRATIONS_ON_START
+          value: "true"
+        - name: APP__SECURITY__CORS_ALLOWED_ORIGINS
+          valueFrom:
+            configMapKeyRef:
+              name: blockchain-api-config
+              key: cors-allowed-origins
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: tls-certs
+          mountPath: /etc/blockchain-api/tls
+          readOnly: true
+      volumes:
+      - name: tls-certs
+        secret:
+          secretName: blockchain-api-tls
+      imagePullSecrets:
+      - name: ghcr-secret

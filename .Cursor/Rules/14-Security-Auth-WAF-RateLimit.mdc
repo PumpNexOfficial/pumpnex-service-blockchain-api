@@ -1,0 +1,14 @@
+# Security: Auth / WAF / RateLimit
+
+WalletAuth:
+- POST /api/auth/nonce выдаёт одноразовый nonce (Redis, TTL).
+- Подпись: "METHOD:PATH:NONCE" (Ed25519; Solana-совместимо). Неверная/повтор nonce → 401.
+
+WAF:
+- Режимы: off|monitor|block.
+- В block → 403 JSON {"error":"waf_blocked","rule":"..."}.
+- Не ломать POST: body читается и возвращается в пайплайн.
+
+Rate limiting:
+- Квоты на окно (IP/User).
+- Превышение → 429 JSON {"error":"rate_limited","retry_after":<secs>}.

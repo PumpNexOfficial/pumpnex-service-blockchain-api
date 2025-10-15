@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: blockchain-api
+  labels:
+    app: blockchain-api
+spec:
+  selector:
+    app: blockchain-api
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  - name: metrics
+    port: 9464
+    targetPort: 9464
+    protocol: TCP
+  type: ClusterIP

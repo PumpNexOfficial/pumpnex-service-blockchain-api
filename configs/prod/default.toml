@@ -1,0 +1,58 @@
+[service]
+name = "blockchain-api"
+version = "0.2.0"
+
+[server]
+host = "0.0.0.0"
+port = 8080
+tls_enabled = true
+request_body_limit_bytes = 1048576  # 1 MiB
+cors_allow_origins = []  # Configure in production
+cors_allow_headers = ["content-type", "authorization", "x-request-id"]
+cors_allow_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+
+[telemetry]
+log_format = "json"
+log_level = "warn"
+request_id_header = "x-request-id"
+
+[rate_limit]
+enabled = true
+strategy = "fixed"
+respect_x_forwarded_for = true
+ip_max_requests = 100
+ip_window_secs = 60
+user_max_requests = 200
+user_window_secs = 60
+
+[integrations]
+database_url = ""
+redis_url = ""
+kafka_brokers = ""
+
+[security]
+cors_allowed_origins = ["https://api.example.com", "https://app.example.com"]
+cors_allowed_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+cors_allowed_headers = ["content-type", "authorization", "x-request-id"]
+hsts_enabled = true
+hsts_max_age_secs = 31536000
+frame_options = "DENY"
+referrer_policy = "no-referrer"
+x_content_type_options = "nosniff"
+permissions_policy = "geolocation=(), microphone=(), camera=()"
+csp_enabled = true
+csp = "default-src 'none'; frame-ancestors 'none';"
+
+[tls]
+enabled = false  # TLS termination on nginx/ingress
+
+[db]
+run_migrations_on_start = true
+
+[deploy]
+service_http_port = 8080
+metrics_port = 9464
+graceful_shutdown_secs = 10
+
+[image]
+name = "ghcr.io/OWNER/blockchain-api"
