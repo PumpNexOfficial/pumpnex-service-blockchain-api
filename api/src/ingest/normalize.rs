@@ -143,3 +143,4 @@ pub fn validate_normalized(tx: &NormalizedTransaction) -> Result<(), ProcessingE
     
     Ok(())
 }
+

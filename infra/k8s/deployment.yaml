@@ -80,3 +80,4 @@ spec:
           secretName: blockchain-api-tls
       imagePullSecrets:
       - name: ghcr-secret
+

@@ -21,3 +21,4 @@ patches:
     - op: replace
       path: /spec/template/spec/containers/0/image
       value: ghcr.io/OWNER/blockchain-api:latest
+

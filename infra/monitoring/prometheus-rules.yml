@@ -156,3 +156,4 @@ groups:
           summary: "High CPU usage"
           description: "CPU usage is {{ $value | humanizePercentage }}"
           runbook_url: "https://docs.example.com/runbooks/cpu-usage"
+

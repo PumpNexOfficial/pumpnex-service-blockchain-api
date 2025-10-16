@@ -464,3 +464,4 @@ Key metrics to monitor:
 ## License
 
 [License information]
+**Load test:** run `infra/load/bin/install-k6.sh` then `./k6 run infra/load/k6/transactions.js`
